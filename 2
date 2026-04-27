@@ -1,0 +1,30 @@
+$Searcher = [adsisearcher]'(objectClass=computer)'
+$Searcher.PageSize = 1000
+$Searcher.FindAll() | ForEach-Object {
+    $Name = $_.Properties['name'][0]
+    $IP = $null
+    
+    # 1. Спершу перевіряємо, чи є IP в самій базі Active Directory
+    if ($_.Properties.Contains('ipv4address')) {
+        $IP = $_.Properties['ipv4address'][0]
+    }
+    
+    # 2. Якщо в AD порожньо, намагаємося резолвити через DNS
+    if (-not $IP) {
+        try {
+            $IP = [System.Net.Dns]::GetHostAddresses($Name) | 
+                  Where-Object { $_.AddressFamily -eq 'InterNetwork' } | 
+                  Select-Object -First 1 -ExpandProperty IPAddressToString
+        } catch {
+            $IP = $null
+        }
+    }
+    
+    # 3. Виводимо об'єкт тільки якщо IP було знайдено
+    if ($IP) {
+        [PSCustomObject]@{
+            Name = $Name
+            IP   = $IP
+        }
+    }
+} | Format-Table -AutoSize
