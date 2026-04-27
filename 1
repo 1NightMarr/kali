@@ -1,0 +1,12 @@
+$Searcher = [adsisearcher]'(objectClass=computer)'
+$Searcher.PageSize = 1000
+$Searcher.FindAll() | ForEach-Object {
+    $Props = $_.Properties
+    $Name = if ($Props.Contains('name')) { $Props['name'][0] } else { "Unknown" }
+    $IP = if ($Props.Contains('ipv4address')) { $Props['ipv4address'][0] } else { "No IP in AD" }
+    
+    [PSCustomObject]@{
+        ComputerName = $Name
+        AD_IPv4      = $IP
+    }
+}
