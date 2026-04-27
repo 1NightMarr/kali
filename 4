@@ -1,0 +1,10 @@
+$Searcher = [adsisearcher]'(objectClass=user)'
+$Searcher.PageSize = 5000
+$Results = $Searcher.FindAll()
+
+$Results | ForEach-Object {
+    $name = $_.Properties.samaccountname[0]
+    if ($name) { $name.Trim() }
+} | Out-File -FilePath "$env:USERPROFILE\Desktop\users.txt" -Encoding utf8
+
+Write-Host "Готово! Список збережено на робочий стіл у файл users.txt" -ForegroundColor Green
