@@ -1,0 +1,10 @@
+$Searcher = [adsisearcher]'(objectClass=user)'
+$Searcher.PageSize = 1000
+$Searcher.FindAll() | ForEach-Object {
+    $Properties = $_.Properties
+    [PSCustomObject]@{
+        UserName    = [string]$Properties.samaccountname
+        DisplayName = [string]$Properties.displayname
+        Description = [string]$Properties.description
+    }
+} | Out-GridView
