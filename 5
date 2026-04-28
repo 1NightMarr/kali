@@ -1,0 +1,39 @@
+#!/bin/bash
+
+input_file="hostnames.txt"
+output_file="resolved_hosts.txt"
+lines=$(wc -l < "$input_file")
+current=0
+
+# Очищуємо файл перед початком
+> "$output_file"
+
+echo "Starting stealth resolution of $lines hosts..."
+
+while read -r hostname; do
+    ((current++))
+    
+    # 1. Резолвимо IP (отримуємо лише адресу)
+    ip=$(host "$hostname" | grep "has address" | awk '{print $4}' | head -n 1)
+    
+    # 2. Якщо IP знайдено, записуємо у файл
+    if [ -n "$ip" ]; then
+        echo "$hostname $ip" >> "$output_file"
+    fi
+
+    # 3. Малюємо прогрес-бар
+    percent=$(( current * 100 / lines ))
+    filled=$(( percent / 2 ))
+    empty=$(( 50 - filled ))
+    printf "\rProgress: [%${filled}s%${empty}s] %d%% (%s)" | tr ' ' '#' | tr '%' ' '
+    printf " %d%%" "$percent"
+
+    # 4. Stealth Jitter (випадкова пауза 5-12 сек)
+    # Це найважливіша частина, щоб не привертати увагу EDR
+    if [ "$current" -lt "$lines" ]; then
+        sleep $(( ( RANDOM % 8 ) + 5 ))
+    fi
+
+done < "$input_file"
+
+echo -e "\nDone! Results saved to $output_file"
