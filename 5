@@ -1,39 +1,56 @@
 #!/bin/bash
 
-input_file="hostnames.txt"
-output_file="resolved_hosts.txt"
-lines=$(wc -l < "$input_file")
-current=0
+# Перевірка аргументів
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <input_file> <output_file>"
+    exit 1
+fi
 
-# Очищуємо файл перед початком
-> "$output_file"
+INPUT_FILE=$1
+OUTPUT_FILE=$2
 
-echo "Starting stealth resolution of $lines hosts..."
+# Перевірка, чи існує вхідний файл
+if [ ! -f "$INPUT_FILE" ]; then
+    echo "Error: File $INPUT_FILE not found!"
+    exit 1
+fi
 
-while read -r hostname; do
-    ((current++))
+# Рахуємо кількість рядків для прогрес-бару
+TOTAL_LINES=$(wc -l < "$INPUT_FILE")
+CURRENT=0
+
+# Очищуємо файл виводу перед стартом
+> "$OUTPUT_FILE"
+
+echo "Resolving $TOTAL_LINES hosts from $INPUT_FILE to $OUTPUT_FILE..."
+echo "Press Ctrl+C to stop."
+
+while read -r host_name; do
+    ((CURRENT++))
     
-    # 1. Резолвимо IP (отримуємо лише адресу)
-    ip=$(host "$hostname" | grep "has address" | awk '{print $4}' | head -n 1)
+    # Резолвінг через системний 'host'
+    # head -n 1 беремо на випадок, якщо у хоста кілька IP
+    IP=$(host "$host_name" | grep "has address" | awk '{print $4}' | head -n 1)
     
-    # 2. Якщо IP знайдено, записуємо у файл
-    if [ -n "$ip" ]; then
-        echo "$hostname $ip" >> "$output_file"
+    if [ -n "$IP" ]; then
+        # Записуємо у файл у форматі: Hostname IP
+        echo -e "${host_name}\t${IP}" >> "$OUTPUT_FILE"
     fi
 
-    # 3. Малюємо прогрес-бар
-    percent=$(( current * 100 / lines ))
-    filled=$(( percent / 2 ))
-    empty=$(( 50 - filled ))
-    printf "\rProgress: [%${filled}s%${empty}s] %d%% (%s)" | tr ' ' '#' | tr '%' ' '
-    printf " %d%%" "$percent"
+    # Малюємо прогрес-бар
+    PERCENT=$(( CURRENT * 100 / TOTAL_LINES ))
+    # Створюємо візуальну смужку (довжина 40 символів)
+    BAR_SIZE=$(( PERCENT * 40 / 100 ))
+    printf -v BAR "%${BAR_SIZE}s" ""
+    printf -v SPACE "%$((40 - BAR_SIZE))s" ""
+    printf "\rProgress: [%s%s] %d%% (%d/%d)" "${BAR// /#}" "${SPACE// /-}" "$PERCENT" "$CURRENT" "$TOTAL_LINES"
 
-    # 4. Stealth Jitter (випадкова пауза 5-12 сек)
-    # Це найважливіша частина, щоб не привертати увагу EDR
-    if [ "$current" -lt "$lines" ]; then
-        sleep $(( ( RANDOM % 8 ) + 5 ))
+    # Stealth Jitter: випадкова пауза від 3 до 7 секунд
+    # Це важливо, щоб не спалитись перед EDR/IDS
+    if [ "$CURRENT" -lt "$TOTAL_LINES" ]; then
+        sleep $(( ( RANDOM % 5 ) + 3 ))
     fi
 
-done < "$input_file"
+done < "$INPUT_FILE"
 
-echo -e "\nDone! Results saved to $output_file"
+echo -e "\n\nDone! Results saved to $OUTPUT_FILE"
