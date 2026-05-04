@@ -1,0 +1,11 @@
+$searcher = [adsisearcher]'objectcategory=computer'
+$searcher.PageSize = 1000
+$searcher.FindAll() | ForEach-Object {
+    $props = $_.Properties
+    [PSCustomObject]@{
+        Name        = [string]$props.name
+        DNS         = [string]$props.dnshostname
+        Description = [string]$props.description
+        OS          = [string]$props.operatingsystem
+    }
+} | Where-Object { $_.Description -ne "" } | Format-Table -AutoSize
